@@ -1,9 +1,13 @@
 # Paul Vander Woude (pavander) EECS 486 HW1 preprocess.py
+import re
 
-def removeSGML(input):
-    pass
+def removeSGML(text):
+    return re.sub(r"<[^>]+>", "", text)
 
 def tokenizeText(input):
+    pass
+
+def BPE(tokens, vocabSize):
     pass
 
 def main():
