@@ -1,0 +1,75 @@
+Tokens:	10000
+Merge rules:	13360
+The first 20 merge rules:
+	(t,h) -> th
+	(th,e) -> the
+	(r,e) -> re
+	(i,n) -> in
+	(o,n) -> on
+	(a,t) -> at
+	(e,r) -> er
+	(a,n) -> an
+	(o,f) -> of
+	(e,n) -> en
+	(i,on) -> ion
+	(a,l) -> al
+	(e,d) -> ed
+	(o,r) -> or
+	(i,s) -> is
+	(i,c) -> ic
+	(e,s) -> es
+	(a,r) -> ar
+	(an,d) -> and
+	(a,s) -> as
+	(in,g) -> ing
+Top 50 Tokens:
+	the [19676]
+	of [12965]
+	re [8188]
+	on [6884]
+	and [6753]
+	es [6137]
+	is [5895]
+	in [5717]
+	a [4473]
+	ed [4272]
+	er [4182]
+	to [4048]
+	for [3900]
+	en [3650]
+	at [3036]
+	th [2954]
+	are [2459]
+	ent [2362]
+	with [2265]
+	an [1983]
+	or [1821]
+	by [1752]
+	flow [1728]
+	ions [1680]
+	that [1571]
+	as [1480]
+	im [1409]
+	v [1306]
+	p [1255]
+	from [1117]
+	be [1092]
+	this [1081]
+	ts [1059]
+	al [1045]
+	lo [1006]
+	which [976]
+	pressure [972]
+	number [966]
+	u [940]
+	boundary [898]
+	results [885]
+	ig [824]
+	mach [824]
+	res [816]
+	ut [802]
+	theory [781]
+	layer [715]
+	was [698]
+	ations [689]
+	method [688]
