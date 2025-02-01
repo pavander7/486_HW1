@@ -94,9 +94,10 @@ def calc_char_freqs(tokens):
 
 from collections import Counter
 
-def find_token_pairs(words, vocab):
+def find_token_pairs(words, vocab, verbose=False, answers=False):
     """Finds all token pairs in the token list and calculates frequencies without double-counting characters."""
     token_pairs = []
+    all_tokens = []
     
     # Track tokens that have already been merged (not just vocab.keys(), but subunits that have been merged)
     merged_tokens = set(vocab.keys())
@@ -128,15 +129,34 @@ def find_token_pairs(words, vocab):
             for i in range(len(subunits) - 1):
                 pair = (subunits[i], subunits[i + 1])
                 token_pairs.append(pair)
+            if answers:
+                all_tokens.extend(subunits)
+        elif word in merged_tokens and answers:
+            all_tokens.append(word)
 
 
     # Count the frequencies of token pairs
     pair_freq = Counter(token_pairs)
+
+    if answers:
+        print('minimun quarter')
+        token_counter = 0
+        token_share = 0
+        num_tokens = len(all_tokens)
+        token_freq = Counter(all_tokens)
+        while token_share < (num_tokens/4):
+            token_counter += 1
+            token_share = 0
+            for _, val in token_freq.most_common(token_counter):
+                token_share += val
+            if verbose:
+                print(f'Top {token_counter} tokens freq:\t{token_share}/{num_tokens}\tproportion: {round(token_share/num_tokens, 4)}/0.2500 ({round((token_share/num_tokens)/0.25*100, 3)}%)')
+        return num_tokens, token_counter
     
     return pair_freq, vocab
 
 
-def merge_token_pairs(vocab, pair_freq):
+def merge_token_pairs(vocab, pair_freq, verbose=False):
     """Merges the most common token pair."""
     # Step 1: Find the most common token pair
     most_common_pair, pair_count = pair_freq.most_common(1)[0]
@@ -151,10 +171,12 @@ def merge_token_pairs(vocab, pair_freq):
     
     # Remove any tokens that have a frequency of zero
     if vocab[most_common_pair[0]] <= 0:
-        print(f'deleted {most_common_pair[0]}')
+        if verbose:
+            print(f'deleted {most_common_pair[0]}')
         del vocab[most_common_pair[0]]
     if most_common_pair[0] != most_common_pair[1] and vocab[most_common_pair[1]] <= 0:
-        print(f'deleted {most_common_pair[1]}')
+        if verbose:
+            print(f'deleted {most_common_pair[1]}')
         del vocab[most_common_pair[1]]
 
     # Step 4: Save the merge rule (which pair was merged into which token)
@@ -162,7 +184,7 @@ def merge_token_pairs(vocab, pair_freq):
     
     return vocab, merge_rule
 
-def BPE(tokens, vocabSize):
+def BPE(tokens, vocabSize, verbose=False):
     """Performs BPE on a list of tokens."""
     iter_counter = 0
 
@@ -175,17 +197,21 @@ def BPE(tokens, vocabSize):
     # Step 2: Loop until vocabulary size reaches vocabSize
     while len(vocab) < vocabSize:
         # Find token pair frequencies
-        pair_freq, vocab = find_token_pairs(tokens, vocab)
+        pair_freq, vocab = find_token_pairs(tokens, vocab, verbose)
 
         # Merge the most common token pair
-        vocab, new_merge_rule = merge_token_pairs(vocab, pair_freq)
+        vocab, new_merge_rule = merge_token_pairs(vocab, pair_freq, verbose)
 
         # Append the merge rule to the list
         merge_rules.append(new_merge_rule)
 
-        iter_counter += 1
-        print(f'{iter_counter}: vocab size {len(vocab)}/{vocabSize} ({round((len(vocab)/vocabSize*100), 2)}%)')
-        print(new_merge_rule)
+        if verbose:
+            iter_counter += 1
+            print(f'{iter_counter}: vocab size {len(vocab)}/{vocabSize} ({round((len(vocab)/vocabSize*100), 2)}%)')
+            print(new_merge_rule)
+    
+    if verbose:
+        print(f'total iterations:\t{iter_counter}\ttokens merged:\t{len(merge_rules)}')
 
     return vocab, merge_rules
 
@@ -196,10 +222,22 @@ def main():
     input_dir = sys.argv[1]
     vocabSize = int(sys.argv[2])
 
+    verbose = False
+    answers = False
+
+    if len(sys.argv) >= 4:
+        verbose = (sys.argv[3] == 'T')
+        if not verbose and sys.argv[3] != 'F':
+            raise Warning(f'USAGE: python3 preprocess.py INPUT_DIR VOCAB_SIZE VERBOSE(T/F) ANSWERS(T/F)\nverbose: {sys.argv[3]} is not (T/F), assuming F')
+        if len(sys.argv) >= 5:
+            answers = (sys.argv[4] == 'T')
+            if not answers and sys.argv[4] != 'F':
+                raise Warning(f'USAGE: python3 preprocess.py INPUT_DIR VOCAB_SIZE VERBOSE(T/F) ANSWERS(T/F)\nanswers: {sys.argv[4]} is not (T/F), assuming F')
+
     tokens = []
 
     if not os.path.isdir(input_dir):
-        raise TypeError(f'USAGE: python3 preprocess.py INPUT_DIR VOCAB_SIZE\n{input_dir} is not a directory')
+        raise TypeError(f'USAGE: python3 preprocess.py INPUT_DIR VOCAB_SIZE VERBOSE(T/F) ANSWERS(T/F)\n{input_dir} is not a directory')
 
     for file_name in os.listdir(input_dir):
         file_path = os.path.join(input_dir, file_name)
@@ -222,7 +260,7 @@ def main():
         
     # \for
 
-    vocab, merge_rules = BPE(tokens, vocabSize)
+    vocab, merge_rules = BPE(tokens, vocabSize, verbose)
 
     vocab = dict(sorted(vocab.items(), key=lambda item: item[1], reverse=True))
 
@@ -235,6 +273,13 @@ def main():
         file.write(f"Top 50 Tokens:\n")
         for i, (token, freq) in enumerate(list(vocab.items())[:50]):
             file.write(f"\t{token} [{freq}]\n")
+
+    if answers:
+        total_tokens, min_quarter_tokens = find_token_pairs(tokens, vocab, verbose, True)
+        with open("preprocess.answers", "w", encoding="ISO-8859-1") as file:
+            file.write(f'Total number of BPE tokens in the Cranfield collection: {total_tokens}\n')
+            file.write(f'Total number of merge rules: {len(merge_rules)}\n')
+            file.write(f'The minimum number of unique BPE tokens in the Cranfield collection accounting for 25% of the total number of BPE tokens in the collection: {min_quarter_tokens}\n')
 
 
 
